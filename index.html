@@ -199,7 +199,7 @@
             今日花粉排行
             <img src="./f2.svg" alt="排行图标" class="rank-icon" />
           </h2>
-          <el-table :data="rankData" style="width: 100%" striped>
+          <el-table :data="rankData" style="width: 100%">
             <el-table-column prop="city" label="城市" align="center">
               <template #default="scope">
                 <span class="city-link" @click="changeCity(scope.row.code)" :style="{ color: scope.row.color }">{{ scope.row.city }}</span>
@@ -268,6 +268,24 @@
               .then((res) => res.json())
               .then((res) => {
                 this.pollenData = res.result;
+                // pollenData 的数据结构如下：
+                // [
+                //   {
+                //     id: 43190,
+                //     city: "\u5317\u4eac",
+                //     date: "2025-03-30",
+                //     hf_level: "\u9ad8",
+                //     hf_num: 520,
+                //     eletype: "\u82b1\u7c89",
+                //     content: "\u6613\u5f15\u53d1\u8fc7\u654f\uff0c\u52a0\u5f3a\u9632\u62a4\uff0c\u89c4\u8303\u7528\u836f\u3002",
+                //     created_at: "2025-03-30T00:03:00.000000Z",
+                //     updated_at: "2025-03-30T00:03:00.000000Z",
+                //     deleted_at: null,
+                //     code: "beijing",
+                //     percent: 65,
+                //     color: "#CC9933",
+                //   },
+                // ];
               })
               .catch((err) => {
                 console.error("获取花粉数据失败:", err);
