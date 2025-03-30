@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- 基本元数据设置 -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="shortcut icon" href="favicon.png" type="image/x-icon" />
+    <title>花粉指数</title>
+    <!-- 引入Element Plus UI框架样式 //unpkg.com/element-plus/dist/index.css -->
+    <link rel="stylesheet" href="./index.css" />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      }
+      .calendar-day {
+        height: 60px;
+        padding: 5px;
+        position: relative;
+      }
+      .pollen-value {
+        font-size: 12px;
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+        border-radius: 4px;
+        padding: 2px 4px;
+      }
+
+      /* 修改为 */
+
+      .pollen-value {
+        font-size: 12px;
+        position: absolute;
+        bottom: 5px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 4px;
+        padding: 5px 4px;
+        text-align: center;
+        width: 80%;
+        max-width: 50px;
+      }
+      .pollen-level-none {
+        background-color: #cccccc;
+        color: #333;
+      }
+      .pollen-level-very-low {
+        background-color: #00cc99;
+        color: #fff;
+      }
+      .pollen-level-low {
+        background-color: #66cc99;
+        color: #fff;
+      }
+      .pollen-level-medium {
+        background-color: #99cc99;
+        color: #fff;
+      }
+      .pollen-level-high {
+        background-color: #cc9999;
+        color: #fff;
+      }
+      .pollen-level-very-high {
+        background-color: #ff3366;
+        color: #fff;
+      }
+      .container {
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 10px;
+        box-sizing: border-box;
+      }
+      .city-selector {
+        text-align: center;
+        margin-bottom: 15px;
+        width: 100%;
+      }
+
+      .rank-list {
+        margin-top: 15px;
+      }
+      .rank-list h2 {
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+      .rank-icon {
+        width: 20px;
+        height: 20px;
+      }
+      .el-table th.is-leaf,
+      .el-table td {
+        text-align: center;
+      }
+      .pollen-level-text {
+        font-weight: bold;
+      }
+      h1 {
+        font-size: 1.5rem;
+        text-align: center;
+        margin-bottom: 15px;
+        margin-top: 25px; /* 增加标题上方留白 */
+        padding-bottom: 15px; /* 增加标题下方留白 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        color: transparent;
+        background: linear-gradient(45deg, #66cc99, #ff7e5f);
+        -webkit-background-clip: text;
+        background-clip: text;
+        text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1);
+        font-weight: bold;
+        letter-spacing: 1px;
+      }
+      .rank-list h2 {
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 25px; /* 增加标题上方留白 */
+        padding-bottom: 15px; /* 增加标题下方留白 */
+        gap: 10px;
+        color: transparent;
+        background: linear-gradient(45deg, #98c961, #6bb82d);
+        -webkit-background-clip: text;
+        background-clip: text;
+        text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1);
+        font-weight: bold;
+        letter-spacing: 0.5px;
+      }
+      .title-icon {
+        width: 24px;
+        height: 24px;
+      }
+      h2 {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+      }
+      /* 加深表格和日历边框颜色 */
+      .el-table th.el-table__cell,
+      .el-table td.el-table__cell {
+        border-color: #c0c4cc !important;
+      }
+      /* 表格表头背景色 */
+      .el-table th.el-table__cell {
+        background-color: #f2f6fc !important;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 主应用容器 -->
+    <div id="app">
+      <div class="container">
+        <!-- 页面标题 -->
+        <h1>
+          <img src="./f1.svg" alt="花粉图标" class="title-icon" />
+          花粉指数
+          <img src="./f1.svg" alt="花粉图标" class="title-icon" />
+        </h1>
+
+        <!-- 城市选择器组件 -->
+        <div class="city-selector">
+          <el-select v-model="selectedCity" placeholder="请选择城市" @change="fetchCityData" style="width: 27%">
+            <el-option v-for="city in cities" :key="city.id" :label="city.city" :value="city.code"></el-option>
+          </el-select>
+        </div>
+
+        <!-- 日历组件，用于显示每日花粉指数 -->
+        <el-calendar v-model="currentDate">
+          <template #date-cell="{ data,date }">
+            <div class="calendar-day">
+              <!-- 显示日期 -->
+              <span>{{ data.day.split('-').at(-1) }}</span>
+              <!-- 显示花粉值和对应的颜色等级 -->
+              <div v-if="getPollenDataForDate(data.day)" class="pollen-value" :class="getPollenLevelClass(getPollenDataForDate(data.day).hf_num)">
+                {{ getPollenDataForDate(data.day).hf_num }}
+              </div>
+            </div>
+          </template>
+        </el-calendar>
+
+        <!-- 城市花粉排行榜 -->
+        <div class="rank-list" v-if="rankData.length > 0">
+          <h2>
+            <img src="./f2.svg" alt="排行图标" class="rank-icon" />
+            今日花粉排行
+            <img src="./f2.svg" alt="排行图标" class="rank-icon" />
+          </h2>
+          <el-table :data="rankData" style="width: 100%" striped>
+            <el-table-column prop="city" label="城市" align="center"></el-table-column>
+            <el-table-column prop="hf_num" label="花粉值" align="center"></el-table-column>
+            <el-table-column label="花粉等级" align="center">
+              <template #default="scope">
+                <span class="pollen-level-text" :style="{ color: scope.row.color }"> {{ scope.row.hf_level }} </span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import Vue 3 //unpkg.com/vue@3 -->
+    <script src="./vue.global.js"></script>
+    <!-- Import component library //unpkg.com/element-plus -->
+    <script src="./element-plus.js"></script>
+    <!-- Import locale：https://cdn.jsdelivr.net/npm/element-plus/dist/locale/zh-cn.min.js -->
+    <script src="./zh-cn.min.js"></script>
+    <script>
+      // 创建Vue应用实例
+      const app = Vue.createApp({
+        // 组件数据
+        data() {
+          return {
+            cities: [], // 城市列表
+            pollenData: [], // 花粉数据
+            rankData: [], // 排名数据
+            selectedCity: "beijing", // 默认选中城市
+            currentDate: new Date(), // 当前日期
+          };
+        },
+
+        // 组件挂载后执行
+        mounted() {
+          this.fetchCities(); // 获取城市列表
+          this.fetchCityData(); // 获取城市花粉数据
+          this.fetchRankData(); // 获取排名数据
+        },
+
+        // 方法定义
+        methods: {
+          // 获取城市列表数据
+          fetchCities() {
+            fetch("https://api.cdfcz.com/huafen/getCityList?token=&app=h5&channel=default&platform=douyin")
+              .then((res) => res.json())
+              .then((res) => {
+                this.cities = res.result;
+              })
+              .catch((err) => {
+                console.error("获取城市列表失败:", err);
+                this.$message.error("获取城市列表失败");
+              });
+          },
+
+          // 获取指定城市的花粉数据
+          fetchCityData() {
+            fetch(`https://api.cdfcz.com/huafen/getCityInfo?city=${this.selectedCity}&days=15&token=&app=h5&channel=default&platform=douyin`)
+              .then((res) => res.json())
+              .then((res) => {
+                this.pollenData = res.result;
+              })
+              .catch((err) => {
+                console.error("获取花粉数据失败:", err);
+                this.$message.error("获取花粉数据失败");
+              });
+          },
+
+          // 获取城市花粉排名数据
+          fetchRankData() {
+            fetch("https://api.cdfcz.com/huafen/getCityRankList?token=&app=h5&channel=default&platform=douyin")
+              .then((res) => res.json())
+              .then((res) => {
+                this.rankData = res.result;
+              })
+              .catch((err) => {
+                console.error("获取排名数据失败:", err);
+                this.$message.error("获取排名数据失败");
+              });
+          },
+
+          // 获取指定日期的花粉数据
+          getPollenDataForDate(dateStr) {
+            return this.pollenData.find((item) => item.date === dateStr);
+          },
+
+          // 根据花粉值获取对应的CSS类名
+          getPollenLevelClass(value) {
+            if (value === 0 || value === "0") return "pollen-level-none"; // 未检测到花粉
+            if (value <= 70) return "pollen-level-very-low"; // 很低
+            if (value <= 150) return "pollen-level-low"; // 低
+            if (value <= 290) return "pollen-level-medium"; // 中
+            if (value <= 520) return "pollen-level-high"; // 高
+            return "pollen-level-very-high"; // 很高
+          },
+        },
+      });
+
+      // 使用Element Plus插件
+      app.use(ElementPlus, {
+        locale: ElementPlusLocaleZhCn,
+      });
+
+      // 挂载Vue应用
+      app.mount("#app");
+    </script>
+  </body>
+</html>
