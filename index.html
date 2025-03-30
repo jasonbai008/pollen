@@ -26,9 +26,7 @@
         right: 5px;
         border-radius: 4px;
         padding: 2px 4px;
-      }
-
-      /* 修改为 */
+      }    
 
       .pollen-value {
         font-size: 12px;
@@ -104,8 +102,7 @@
         font-size: 1.5rem;
         text-align: center;
         margin-bottom: 15px;
-        margin-top: 25px; /* 增加标题上方留白 */
-        padding-bottom: 15px; /* 增加标题下方留白 */
+        margin-top: 20px; /* 增加标题上方留白 */
         display: flex;
         align-items: center;
         justify-content: center;
@@ -152,6 +149,15 @@
         background-color: #f2f6fc !important;
         font-weight: bold;
       }
+      /* 城市链接样式 */
+      .city-link {
+        /* color: #409eff; */
+        cursor: pointer;
+        text-decoration: underline;
+      }
+      .city-link:hover {
+        /* color: #66b1ff; */
+      }
     </style>
   </head>
   <body>
@@ -194,8 +200,16 @@
             <img src="./f2.svg" alt="排行图标" class="rank-icon" />
           </h2>
           <el-table :data="rankData" style="width: 100%" striped>
-            <el-table-column prop="city" label="城市" align="center"></el-table-column>
-            <el-table-column prop="hf_num" label="花粉值" align="center"></el-table-column>
+            <el-table-column prop="city" label="城市" align="center">
+              <template #default="scope">
+                <span class="city-link" @click="changeCity(scope.row.code)" :style="{ color: scope.row.color }">{{ scope.row.city }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="hf_num" label="花粉值" align="center">
+              <template #default="scope">
+                <span :style="{ color: scope.row.color }">{{ scope.row.hf_num }}</span>
+              </template>
+            </el-table-column>
             <el-table-column label="花粉等级" align="center">
               <template #default="scope">
                 <span class="pollen-level-text" :style="{ color: scope.row.color }"> {{ scope.row.hf_level }} </span>
@@ -287,6 +301,17 @@
             if (value <= 290) return "pollen-level-medium"; // 中
             if (value <= 520) return "pollen-level-high"; // 高
             return "pollen-level-very-high"; // 很高
+          },
+          
+          // 切换城市
+          changeCity(cityCode) {
+            this.selectedCity = cityCode;
+            this.fetchCityData();
+            // 滚动到页面顶部
+            window.scrollTo({
+              top: 0,
+              behavior: 'smooth'
+            });
           },
         },
       });
