@@ -8,6 +8,8 @@
     <title>花粉指数</title>
     <!-- 引入Element Plus UI框架样式 //unpkg.com/element-plus/dist/index.css -->
     <link rel="stylesheet" href="./index.css" />
+    <!-- 引入Echarts库 (使用CDN) -->
+    <script src="./js/echarts.min.js"></script>
     <style>
       body {
         margin: 0;
@@ -158,6 +160,12 @@
       .city-link:hover {
         /* color: #66b1ff; */
       }
+      /* 添加图表容器样式 */
+      #pollen-chart {
+        width: 100%;
+        height: 600px;
+        margin: 15px 0;
+      }
     </style>
   </head>
   <body>
@@ -178,19 +186,8 @@
           </el-select>
         </div>
 
-        <!-- 日历组件，用于显示每日花粉指数 -->
-        <el-calendar v-model="currentDate">
-          <template #date-cell="{ data,date }">
-            <div class="calendar-day">
-              <!-- 显示日期 -->
-              <span>{{ data.day.split('-').at(-1) }}</span>
-              <!-- 显示花粉值和对应的颜色等级 -->
-              <div v-if="getPollenDataForDate(data.day)" class="pollen-value" :class="getPollenLevelClass(getPollenDataForDate(data.day).hf_num)">
-                {{ getPollenDataForDate(data.day).hf_num }}
-              </div>
-            </div>
-          </template>
-        </el-calendar>
+        <!-- 使用Echarts柱状图替换日历组件 -->
+        <div id="pollen-chart"></div>
 
         <!-- 城市花粉排行榜 -->
         <div class="rank-list" v-if="rankData.length > 0">
@@ -237,6 +234,7 @@
             rankData: [], // 排名数据
             selectedCity: "beijing", // 默认选中城市
             currentDate: new Date(), // 当前日期
+            chart: null, // Echarts实例
           };
         },
 
@@ -245,10 +243,154 @@
           this.fetchCities(); // 获取城市列表
           this.fetchCityData(); // 获取城市花粉数据
           this.fetchRankData(); // 获取排名数据
+          // 初始化图表
+          this.initChart();
+          // 监听窗口大小变化，调整图表大小
+          window.addEventListener("resize", this.resizeChart);
+        },
+
+        // 组件销毁前执行
+        beforeUnmount() {
+          // 移除事件监听
+          window.removeEventListener("resize", this.resizeChart);
+          // 销毁图表实例
+          if (this.chart) {
+            this.chart.dispose();
+            this.chart = null;
+          }
         },
 
         // 方法定义
         methods: {
+          // 初始化Echarts图表
+          initChart() {
+            // 获取DOM元素
+            const chartDom = document.getElementById("pollen-chart");
+            // 初始化Echarts实例
+            this.chart = echarts.init(chartDom);
+            // 设置加载动画
+            this.chart.showLoading();
+          },
+
+          // 调整图表大小
+          resizeChart() {
+            if (this.chart) {
+              this.chart.resize();
+            }
+          },
+
+          // 更新图表数据
+          updateChart() {
+            if (!this.chart || this.pollenData.length === 0) return;
+
+            // 停止加载动画
+            this.chart.hideLoading();
+
+            // 准备数据
+            const dates = this.pollenData.map((item) => item.date);
+            const values = this.pollenData.map((item) => item.hf_num);
+            const colors = this.pollenData.map((item) => item.color);
+            const contents = this.pollenData.map((item) => item.content);
+            const levels = this.pollenData.map((item) => item.hf_level);
+
+            // 设置图表选项
+            const option = {
+              tooltip: {
+                trigger: "axis",
+                axisPointer: {
+                  type: "shadow",
+                },
+                formatter: function (params) {
+                  const data = params[0];
+                  const index = data.dataIndex;
+                  return `<div style="font-weight:bold;margin-bottom:5px;">${dates[index]}</div>
+                         <div>花粉值: ${values[index]}</div>
+                         <div>等级: ${levels[index]}</div>
+                         <div>${contents[index]}</div>`;
+                },
+              },
+              grid: {
+                left: "3%",
+                right: "5%",
+                bottom: "3%",
+                top: "3%",
+                containLabel: true,
+              },
+              xAxis: {
+                type: "value",
+                position: "top",
+                nameLocation: "end",
+              },
+              yAxis: {
+                type: "category",
+                data: dates,
+                inverse: true,
+                axisLabel: {
+                  formatter: function (value) {
+                    // 格式化日期为MM-DD格式
+                    const date = new Date(value);
+                    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+                    const day = date.getDate().toString().padStart(2, "0");
+                    return `${month}-${day}`;
+                  },
+                },
+              },
+              series: [
+                {
+                  name: "花粉值",
+                  type: "bar",
+                  data: this.pollenData.map((item, index) => {
+                    return {
+                      value: item.hf_num,
+                      itemStyle: {
+                        // 添加圆角效果
+                        borderRadius: [0, 4, 4, 0],
+                        // 使用渐变色替代单一颜色
+                        color: item.color,
+                      },
+                      label: {
+                        show: true,
+                        position: "inside",
+                        formatter: function () {
+                          return item.hf_num;
+                        },
+                        color: "#ffffff",
+                        fontSize: 12,
+                        align: "center",
+                        verticalAlign: "middle",
+                      },
+                    };
+                  }),
+                  barWidth: "80%",
+                  // 在series中设置动画属性
+                  animationDelay: function (idx) {
+                    return idx * 100; // 每个柱子延迟200毫秒显示
+                  },
+                  animationDuration: 800, // 动画持续时间
+                },
+              ],
+            };
+
+            // 设置图表选项
+            this.chart.setOption(option);
+          },
+
+          // 获取指定城市的花粉数据
+          fetchCityData() {
+            fetch(`https://api.cdfcz.com/huafen/getCityInfo?city=${this.selectedCity}&days=15&token=&app=h5&channel=default&platform=douyin`)
+              .then((res) => res.json())
+              .then((res) => {
+                this.pollenData = res.result;
+                // 更新图表
+                this.updateChart();
+              })
+              .catch((err) => {
+                console.error("获取花粉数据失败:", err);
+                this.$message.error("获取花粉数据失败");
+              });
+          },
+
+          // 其他方法保持不变...
           // 获取城市列表数据
           fetchCities() {
             fetch("https://api.cdfcz.com/huafen/getCityList?token=&app=h5&channel=default&platform=douyin")
@@ -259,37 +401,6 @@
               .catch((err) => {
                 console.error("获取城市列表失败:", err);
                 this.$message.error("获取城市列表失败");
-              });
-          },
-
-          // 获取指定城市的花粉数据
-          fetchCityData() {
-            fetch(`https://api.cdfcz.com/huafen/getCityInfo?city=${this.selectedCity}&days=15&token=&app=h5&channel=default&platform=douyin`)
-              .then((res) => res.json())
-              .then((res) => {
-                this.pollenData = res.result;
-                // pollenData 的数据结构如下：
-                // [
-                //   {
-                //     id: 43190,
-                //     city: "\u5317\u4eac",
-                //     date: "2025-03-30",
-                //     hf_level: "\u9ad8",
-                //     hf_num: 520,
-                //     eletype: "\u82b1\u7c89",
-                //     content: "\u6613\u5f15\u53d1\u8fc7\u654f\uff0c\u52a0\u5f3a\u9632\u62a4\uff0c\u89c4\u8303\u7528\u836f\u3002",
-                //     created_at: "2025-03-30T00:03:00.000000Z",
-                //     updated_at: "2025-03-30T00:03:00.000000Z",
-                //     deleted_at: null,
-                //     code: "beijing",
-                //     percent: 65,
-                //     color: "#CC9933",
-                //   },
-                // ];
-              })
-              .catch((err) => {
-                console.error("获取花粉数据失败:", err);
-                this.$message.error("获取花粉数据失败");
               });
           },
 
