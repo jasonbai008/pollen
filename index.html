@@ -26,7 +26,7 @@
         right: 5px;
         border-radius: 4px;
         padding: 2px 4px;
-      }    
+      }
 
       .pollen-value {
         font-size: 12px;
@@ -45,19 +45,19 @@
         color: #333;
       }
       .pollen-level-very-low {
-        background-color: #00cc99;
+        background-color: #2ecc71;
         color: #fff;
       }
       .pollen-level-low {
-        background-color: #66cc99;
+        background-color: #16a085;
         color: #fff;
       }
       .pollen-level-medium {
-        background-color: #99cc99;
+        background-color: #f39c12;
         color: #fff;
       }
       .pollen-level-high {
-        background-color: #cc9999;
+        background-color: #d35400;
         color: #fff;
       }
       .pollen-level-very-high {
@@ -221,11 +221,11 @@
     </div>
 
     <!-- Import Vue 3 //unpkg.com/vue@3 -->
-    <script src="./vue.global.js"></script>
+    <script src="./js/vue.global.js"></script>
     <!-- Import component library //unpkg.com/element-plus -->
-    <script src="./element-plus.js"></script>
+    <script src="./js/element-plus.js"></script>
     <!-- Import locale：https://cdn.jsdelivr.net/npm/element-plus/dist/locale/zh-cn.min.js -->
-    <script src="./zh-cn.min.js"></script>
+    <script src="./js/zh-cn.min.js"></script>
     <script>
       // 创建Vue应用实例
       const app = Vue.createApp({
@@ -302,7 +302,7 @@
             if (value <= 520) return "pollen-level-high"; // 高
             return "pollen-level-very-high"; // 很高
           },
-          
+
           // 切换城市
           changeCity(cityCode) {
             this.selectedCity = cityCode;
@@ -310,7 +310,7 @@
             // 滚动到页面顶部
             window.scrollTo({
               top: 0,
-              behavior: 'smooth'
+              behavior: "smooth",
             });
           },
         },
